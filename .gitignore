@@ -3,3 +3,4 @@
 *.pyo
 *.db
 BLEHeartRateLogger.conf
+.vscode/
