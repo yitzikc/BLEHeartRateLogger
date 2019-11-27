@@ -172,7 +172,30 @@ def get_ble_hr_mac():
     return addr
 
 
-def main(addr=None, sqlfile=None, gatttool="gatttool", check_battery=False, hr_handle=None, debug_gatttool=False):
+class HrmEventListener(object):
+    "Interface for custom user events"
+    def on_battery_level(self, level):
+        pass
+
+    def on_heart_rate(self, rate):
+        pass
+
+    def on_connection_established(self):
+        pass
+
+    def on_disconnection(self):
+        pass
+
+
+def main(
+        addr=None,
+        sqlfile=None,
+        gatttool="gatttool",
+        check_battery=False,
+        hr_handle=None,
+        debug_gatttool=False,
+        user_event_listener=HrmEventListener()
+    ):
     """
     main routine to which orchestrates everything
     """
@@ -223,13 +246,16 @@ def main(addr=None, sqlfile=None, gatttool="gatttool", check_battery=False, hr_h
             break
 
         log.info("Connected to " + addr)
+        user_event_listener.on_connection_established()
 
         if check_battery:
             gt.sendline("char-read-uuid 00002a19-0000-1000-8000-00805f9b34fb")
             try:
                 gt.expect("value: ([0-9a-f]+)")
                 battery_level = gt.match.group(1)
-                log.info("Battery level: " + str(int(battery_level, 16)))
+                battery_level_n = int(battery_level, 16)
+                log.info("Battery level: %d", battery_level_n)
+                user_event_listener.on_battery_level(battery_level_n)
 
             except pexpect.TIMEOUT:
                 log.error("Couldn't read battery level.")
@@ -275,6 +301,7 @@ def main(addr=None, sqlfile=None, gatttool="gatttool", check_battery=False, hr_h
                 # If the timer expires, it means that we have lost the
                 # connection with the HR monitor
                 log.warn("Connection lost with " + addr + ". Reconnecting.")
+                user_event_listener.on_disconnection()
                 if sqlfile is not None:
                     sq.commit()
                 gt.sendline("quit")
@@ -303,9 +330,10 @@ def main(addr=None, sqlfile=None, gatttool="gatttool", check_battery=False, hr_h
             res = interpret(data)
 
             log.debug(res)
+            user_event_listener.on_heart_rate(res["hr"])
 
             if sqlfile is None:
-                log.info("Heart rate: " + str(res["hr"]))
+                log.info("Heart rate: %s", res["hr"])
                 continue
 
             # Push the data to the database
