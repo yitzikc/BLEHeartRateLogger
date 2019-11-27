@@ -21,6 +21,7 @@ setup(
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
+        'Environment :: Operating System :: POSIX :: Linux',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2',
@@ -32,6 +33,7 @@ setup(
 
     keywords = 'bluetooth heart-rate logging',
     packages = find_packages(),
+    py_modules=['BLEHeartRateLogger'],
     install_requires = ['pexpect'],
 
     entry_points = {
