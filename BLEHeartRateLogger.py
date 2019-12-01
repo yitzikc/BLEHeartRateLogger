@@ -27,7 +27,7 @@ import argparse
 import ConfigParser
 
 logging.basicConfig(format="%(asctime)-15s  %(message)s")
-log = logging.getLogger("BLEHeartRateLogger")
+log = logging.getLogger(__name__)
 
 
 def parse_args():
